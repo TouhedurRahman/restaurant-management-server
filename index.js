@@ -27,9 +27,22 @@ async function run() {
         await client.connect();
 
         // Database collections
+        const usersCollection = client.db('restaurant_db').collection('users');
         const menuCollection = client.db('restaurant_db').collection('menu');
         const reviewCollection = client.db('restaurant_db').collection('reviews');
         const cartCollection = client.db('restaurant_db').collection('cart');
+
+        // send user(s) data to db
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const existingUser = await usersCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: "User already exists" })
+            }
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        });
 
         // get all menues from db
         app.get('/menu', async (req, res) => {
@@ -71,7 +84,7 @@ async function run() {
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        console.log("Pinged your deployment. You're successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
@@ -84,5 +97,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
 });
