@@ -44,6 +44,12 @@ async function run() {
             res.send(result);
         });
 
+        // get all user(s) api
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        })
+
         // get all menues from db
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
