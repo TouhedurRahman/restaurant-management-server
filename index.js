@@ -11,6 +11,23 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+const vrifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res.status(401).sned({ error: true, message: 'Unauthorized Access' });
+    }
+    // bearer token
+    const token = authorization.split(' ')[1];
+
+    twt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+            return res.status(401).sned({ error: true, message: 'Unauthorized Access' });
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.yrcmf.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -33,7 +50,7 @@ async function run() {
         const reviewCollection = client.db('restaurant_db').collection('reviews');
         const cartCollection = client.db('restaurant_db').collection('cart');
 
-        // send twt token api
+        // send jwt token api
         app.post('/jwt', (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
