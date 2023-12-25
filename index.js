@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 require('dotenv').config();
@@ -31,6 +32,13 @@ async function run() {
         const menuCollection = client.db('restaurant_db').collection('menu');
         const reviewCollection = client.db('restaurant_db').collection('reviews');
         const cartCollection = client.db('restaurant_db').collection('cart');
+
+        // send twt token api
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ token });
+        });
 
         // send user(s) data to db
         app.post('/users', async (req, res) => {
