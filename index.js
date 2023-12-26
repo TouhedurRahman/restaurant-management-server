@@ -11,17 +11,17 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const vrifyJWT = (req, res, next) => {
+const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
     if (!authorization) {
-        return res.status(401).sned({ error: true, message: 'Unauthorized Access' });
+        return res.status(401).send({ error: true, message: 'Unauthorized Access' });
     }
     // bearer token
     const token = authorization.split(' ')[1];
 
-    twt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
         if (error) {
-            return res.status(401).sned({ error: true, message: 'Unauthorized Access' });
+            return res.status(401).send({ error: true, message: 'Unauthorized Access' });
         }
         req.decoded = decoded;
         next();
@@ -73,7 +73,7 @@ async function run() {
         app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
-        })
+        });
 
         // update user's role
         app.patch('/users/admin/:id', async (req, res) => {
@@ -86,7 +86,7 @@ async function run() {
             };
             const result = await usersCollection.updateOne(filter, updateDoc);
             res.send(result);
-        })
+        });
 
         // delete user's api
         app.delete('/users/:id', async (req, res) => {
@@ -94,7 +94,7 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.deleteOne(query);
             res.send(result);
-        })
+        });
 
         // get all menues from db
         app.get('/menu', async (req, res) => {
@@ -116,11 +116,17 @@ async function run() {
         });
 
         // cart collection api(s)
-        app.get('/cart', async (req, res) => {
+        app.get('/cart', verifyJWT, async (req, res) => {
             const email = req.query.email;
             if (!email) {
                 res.send([]);
             }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden Access' });
+            }
+
             const query = { email: email };
             const result = await cartCollection.find(query).toArray();
             res.send(result);
