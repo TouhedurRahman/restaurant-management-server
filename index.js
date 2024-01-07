@@ -57,6 +57,17 @@ async function run() {
             res.send({ token });
         });
 
+        // use verify JWT before using verifyAdmin
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'Forbidden Access' });
+            }
+            next();
+        }
+
         // send user(s) data to db
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -70,7 +81,7 @@ async function run() {
         });
 
         // get all user(s) api
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -87,6 +98,30 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
+
+        // make isAdmin api
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: "Forbidden Access" });
+            }
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === "admin";
+            }
+            res.send({ admin });
+            // const email = req.params.email;
+            // const userEmail = req.decoded.email;
+            // if (userEmail === email) {
+            //     res.send({ admin: false });
+            // }
+            // const query = { email: email };
+            // const user = await usersCollection.findOne(query);
+            // const result = { admin: user?.role === 'admin' };
+            // res.send({ result });
+        })
 
         // delete user's api
         app.delete('/users/:id', async (req, res) => {
