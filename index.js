@@ -112,15 +112,6 @@ async function run() {
                 admin = user?.role === "admin";
             }
             res.send({ admin });
-            // const email = req.params.email;
-            // const userEmail = req.decoded.email;
-            // if (userEmail === email) {
-            //     res.send({ admin: false });
-            // }
-            // const query = { email: email };
-            // const user = await usersCollection.findOne(query);
-            // const result = { admin: user?.role === 'admin' };
-            // res.send({ result });
         })
 
         // delete user's api
@@ -142,7 +133,15 @@ async function run() {
             const newItem = req.body;
             const result = await menuCollection.insertOne(newItem);
             res.send(result);
-        })
+        });
+
+        // delete menu api
+        app.delete('/menu/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await menuCollection.deleteOne(query);
+            res.send(result);
+        });
 
         // get all reviews from db
         app.get('/reviews', async (req, res) => {
@@ -180,7 +179,7 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await cartCollection.deleteOne(query);
             res.send(result);
-        })
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
