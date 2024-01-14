@@ -221,6 +221,23 @@ async function run() {
             res.send({ insertResult, deleteResult });
         })
 
+        // admin profile api
+        app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
+            const users = await usersCollection.estimatedDocumentCount();
+            const products = await menuCollection.estimatedDocumentCount();
+            const orders = await paymentCollection.estimatedDocumentCount();
+
+            const payments = await paymentCollection.find().toArray();
+            const revenue = payments.reduce((accumulator, payment) => accumulator + payment.price, 0);
+
+            res.send({
+                users,
+                products,
+                orders,
+                revenue
+            })
+        })
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You're successfully connected to MongoDB!");
