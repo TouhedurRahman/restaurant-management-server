@@ -56,6 +56,7 @@ async function run() {
         const menuCollection = client.db('restaurant_db').collection('menu');
         const reviewCollection = client.db('restaurant_db').collection('reviews');
         const cartCollection = client.db('restaurant_db').collection('cart');
+        const paymentCollection = client.db('restaurant_db').collection('payments');
 
         // send jwt token api
         app.post('/jwt', (req, res) => {
@@ -204,6 +205,21 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         });
+
+        // add payment info and delete paid items from cart api
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            const deleteQuery = {
+                _id: {
+                    $in: payment.cartItems.map(id => new ObjectId(id))
+                }
+            }
+            const deleteResult = await cartCollection.deleteMany(deleteQuery);
+
+            res.send({ insertResult, deleteResult });
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
