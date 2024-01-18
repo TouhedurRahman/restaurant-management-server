@@ -219,7 +219,7 @@ async function run() {
             const deleteResult = await cartCollection.deleteMany(deleteQuery);
 
             res.send({ insertResult, deleteResult });
-        })
+        });
 
         // admin profile api
         app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
@@ -235,8 +235,47 @@ async function run() {
                 products,
                 orders,
                 revenue
-            })
-        })
+            });
+        });
+
+        // order stats api
+        app.get('/order-stats', verifyJWT, verifyAdmin, async (req, res) => {
+            // Fetch all payments
+            const payments = await paymentCollection.find().toArray();
+
+            // Fetch all menu items
+            const menuItems = await menuCollection.find().toArray();
+
+            // Map menu items to a dictionary for easier lookup
+            const menuItemsMap = menuItems.reduce((map, menuItem) => {
+                map[menuItem._id.toString()] = menuItem;
+                return map;
+            }, {});
+
+            // Calculate stats
+            const stats = payments.reduce((result, payment) => {
+                payment.menuItems.forEach(menuItemId => {
+                    const menuItem = menuItemsMap[menuItemId.toString()];
+                    if (menuItem) {
+                        const category = menuItem.category;
+                        result[category] = result[category] || { count: 0, totalPrice: 0 };
+                        result[category].count += 1;
+                        result[category].totalPrice += menuItem.price;
+                    }
+                });
+                return result;
+            }, {});
+
+            // Convert the stats to an array
+            const result = Object.keys(stats).map(category => ({
+                category: category,
+                count: stats[category].count,
+                totalPrice: stats[category].totalPrice.toFixed(2)
+            }));
+
+            // console.log(result);
+            res.send(result);
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
